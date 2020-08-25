@@ -5,7 +5,9 @@ import 'package:flutter_15/models/gem_item.dart';
 
 const int rows = 8;
 const int cols = 6;
-
+const int minNumber = 2;
+const int maxNumber = 8;
+const String gemsPath = 'assets/gems/';
 class GameTable extends StatefulWidget {
   GameTable({Key key}) : super(key: key);
 
@@ -24,6 +26,7 @@ class _GameTableState extends State<GameTable> {
   @override
   void initState() {
     super.initState();
+    _fullfillGemMatrix();
     print(_gems);
   }
 
@@ -62,8 +65,8 @@ class _GameTableState extends State<GameTable> {
           ),
           child:Table(
             defaultColumnWidth: FixedColumnWidth(_cardSize),
-            children: List<TableRow>.generate(8, (index) {
-              return _generateRow(index);
+            children: List<TableRow>.generate(8, (rowIndex) {
+              return _generateRow(rowIndex);
             }, growable: false)
           )
         )
@@ -72,25 +75,70 @@ class _GameTableState extends State<GameTable> {
 
   TableRow _generateRow(int rowIndex) {
     return TableRow(
-        children: List<TableCell>.generate(6, (index) {
-      return _generateCell(index);
+        children: List<TableCell>.generate(6, (colIndex) {
+      return _generateCell(rowIndex, colIndex);
     }, growable: false));
   }
 
-  TableCell _generateCell(int value) {
+  TableCell _generateCell(int rowIndex, int colIndex) {
     return TableCell(
-        child: Card(
-            color: Colors.white54.withOpacity(0.2),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15.0),
-            ),
-            elevation: 1.0,
-            child: Draggable(
-              child: _generateContainer(isDragging: false, value: value),
-              feedback: _generateContainer(isDragging: false, value: value),
-              childWhenDragging:
-                  _generateContainer(isDragging: true, value: null),
-            )));
+        child: _gems[rowIndex][colIndex].value == null ?
+        _generateDragTarget(rowIndex, colIndex)
+            : _generateDraggable(rowIndex, colIndex)
+    );
+  }
+
+  Widget _generateDraggable(int rowIndex, int colIndex) {
+    return Card(
+        color: Colors.white54.withOpacity(0.2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.0),
+        ),
+        elevation: 1.0,
+        child: Draggable(
+          data: rowIndex.toString() + "_" + colIndex.toString(),
+          child: _generateContainer(isDragging: false, value: _gems[rowIndex][colIndex].value),
+          feedback: _generateContainer(isDragging: false, value: _gems[rowIndex][colIndex].value),
+          childWhenDragging: _generateContainer(isDragging: true, value: null),
+        ));
+  }
+
+  Widget _generateDragTarget(int rowIndex, int colIndex) {
+    List<int> targetCoords = [rowIndex,colIndex];
+    return DragTarget(builder: (context, List<String> candidateData, rejectedData) {
+      return Card(
+          color: Colors.white54.withOpacity(0.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.0),
+          ),
+          elevation: 1.0,
+          child: _generateContainer(isDragging: false, value: null)
+        );
+      }, onWillAccept: (data) {
+        print("Will Accept -> " + data);
+        List<int> coords = _convertDataToCoords(data);
+        print("Gem Coords -> " + coords.toString());
+        print("Target Coords -> " + targetCoords.toString());
+        return true;
+      }, onAccept: (data) {
+        print("onAccept");
+      },
+    );
+  }
+
+  List<int> _convertDataToCoords(String data) {
+    List<int> coords = List<int>(2);
+    List<String> coordsStr = data.split("_");
+
+    for (int i=0; i<coordsStr.length; i++) {
+      try {
+        coords[i] = int.parse(coordsStr[i]);
+      } catch (e) {
+        coords[i] = null;
+      }
+    }
+
+    return coords;
   }
 
   Material _generateContainer({bool isDragging, int value}) {
@@ -99,20 +147,20 @@ class _GameTableState extends State<GameTable> {
         child: Container(
           height: _cardSize,
           width: _cardSize,
-          decoration: !isDragging ?
+          decoration: (isDragging || value == null) ?
+            null :
             BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/gems/' +  _getGemImage(value)),
+                image: AssetImage(gemsPath +  _getGemImage(value)),
                 fit: BoxFit.contain,
               ),
               color: Colors.transparent,
-            )
-            : null,
+            ),
           child: Center(
             child: value == null ?
             SizedBox.shrink()
             : Text(
-                (value+1).toString(),
+                value.toString(),
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24.0,
@@ -200,5 +248,20 @@ class _GameTableState extends State<GameTable> {
     return gemImage;
   }
 
+  void _fullfillGemMatrix(){
+    for (int i=rows-1; i>3;i--){
+      for (int j=0; j<cols;j++){
+        _gems[i][j].value = _generateRandomNumber();
+      }
+    }
+  }
+
+  int _generateRandomNumber() {
+    final _random = new Random();
+    int value = _random.nextInt(maxNumber - minNumber);
+    if (value == 0)
+      value = 1;
+    return value;
+  }
 
 }

@@ -100,6 +100,16 @@ class _GameTableState extends State<GameTable> {
           child: _generateContainer(isDragging: false, value: _gems[rowIndex][colIndex].value),
           feedback: _generateContainer(isDragging: false, value: _gems[rowIndex][colIndex].value),
           childWhenDragging: _generateContainer(isDragging: true, value: null),
+          onDragEnd: (details) {
+            print("Draggable End Details velocity " + details.velocity.toString());
+            print("Draggable End Details offset dx " + details.offset.dx.toString());
+            print("Draggable End Details offset dy " + details.offset.dy.toString());
+            print("Draggable End Details direction " + details.offset.direction.toString());
+            print("Draggable End Details distance " + details.offset.distance.toString());
+            print("Draggable End Details distanceSquared " + details.offset.distanceSquared.toString());
+            print("Draggable End Details isFinite " + details.offset.isFinite.toString());
+            print("Draggable End Details isInfinite " + details.offset.isInfinite.toString());
+          },
         ));
   }
 
@@ -122,7 +132,15 @@ class _GameTableState extends State<GameTable> {
         return true;
       }, onAccept: (data) {
         print("onAccept");
-      },
+      }, onAcceptWithDetails: (details) {
+        print("onAccept Details offset dx " + details.offset.dx.toString());
+        print("onAccept Details offset dy " + details.offset.dy.toString());
+        print("onAccept Details direction " + details.offset.direction.toString());
+        print("onAccept Details distance " + details.offset.distance.toString());
+        print("onAccept Details distanceSquared " + details.offset.distanceSquared.toString());
+        print("onAccept Details isFinite " + details.offset.isFinite.toString());
+        print("onAccept Details isInfinite " + details.offset.isInfinite.toString());
+      }
     );
   }
 
@@ -262,6 +280,10 @@ class _GameTableState extends State<GameTable> {
     if (value == 0)
       value = 1;
     return value;
+  }
+
+  void _checkMatrixValue(int row, int col, int value) {
+
   }
 
 }

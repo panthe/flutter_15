@@ -1,38 +1,51 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_15/helper/game_table_helper.dart';
+import 'package:flutter_15/ui/table_card.dart';
 import 'dart:math';
-import 'package:flutter_15/models/gem_item.dart';
+
+import 'package:flutter_15/ui/table_cell.dart';
 
 const int rows = 8;
 const int cols = 6;
 const int minNumber = 2;
 const int maxNumber = 8;
+const int startRow = 5;
 const String gemsPath = 'assets/gems/';
+
 class GameTable extends StatefulWidget {
-  GameTable({Key key}) : super(key: key);
+  GameTable({Key? key}) : super(key: key);
 
   @override
   _GameTableState createState() => _GameTableState();
 }
 
 class _GameTableState extends State<GameTable> {
-  double _cardSize;
-  var _gems = List.generate(rows,
-          (i) => List.generate(cols,
-              (j) => GemItem(value: null),
-          growable: false),
-      growable: false);
+  double _cardSize = 0;
+  var _gems = GameTableHelper.generateGameTable(rows, cols);
 
   @override
   void initState() {
     super.initState();
-    _fullfillGemMatrix();
-    print(_gems);
+    GameTableHelper.fullfillGemMatrix(startRow, rows, cols, minNumber, maxNumber, _gems);
+    //print(_gems);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print('didChangeDependencies');
+    final newCardSize = GameTableHelper.getCardSize(context);
+    if (newCardSize != _cardSize) {
+      print('didChangeDependencies changeCardSize');
+      setState(() {
+        _cardSize = newCardSize;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    _cardSize = _getCardSize(context).toDouble();
     return Align(
       alignment: Alignment.bottomCenter,
         child:Container(
@@ -84,206 +97,59 @@ class _GameTableState extends State<GameTable> {
     return TableCell(
         child: _gems[rowIndex][colIndex].value == null ?
         _generateDragTarget(rowIndex, colIndex)
-            : _generateDraggable(rowIndex, colIndex)
+            : TableCard(
+          title: "${rowIndex}_$colIndex",
+          cardSize: _cardSize,
+          gemItem: _gems[rowIndex][colIndex],
+        )
     );
   }
 
-  Widget _generateDraggable(int rowIndex, int colIndex) {
-    return Card(
-        color: Colors.white54.withOpacity(0.2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15.0),
-        ),
-        elevation: 1.0,
-        child: Draggable(
-          data: rowIndex.toString() + "_" + colIndex.toString(),
-          child: _generateContainer(isDragging: false, value: _gems[rowIndex][colIndex].value),
-          feedback: _generateContainer(isDragging: false, value: _gems[rowIndex][colIndex].value),
-          childWhenDragging: _generateContainer(isDragging: true, value: null),
-          onDragEnd: (details) {
-            print("Draggable End Details velocity " + details.velocity.toString());
-            print("Draggable End Details offset dx " + details.offset.dx.toString());
-            print("Draggable End Details offset dy " + details.offset.dy.toString());
-            print("Draggable End Details direction " + details.offset.direction.toString());
-            print("Draggable End Details distance " + details.offset.distance.toString());
-            print("Draggable End Details distanceSquared " + details.offset.distanceSquared.toString());
-            print("Draggable End Details isFinite " + details.offset.isFinite.toString());
-            print("Draggable End Details isInfinite " + details.offset.isInfinite.toString());
-          },
-        ));
-  }
-
-  Widget _generateDragTarget(int rowIndex, int colIndex) {
+  DragTarget _generateDragTarget(int rowIndex, int colIndex) {
     List<int> targetCoords = [rowIndex,colIndex];
-    return DragTarget(builder: (context, List<String> candidateData, rejectedData) {
+    return DragTarget(builder: (context, candidateData, rejectedData) {
       return Card(
           color: Colors.white54.withOpacity(0.2),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15.0),
           ),
           elevation: 1.0,
-          child: _generateContainer(isDragging: false, value: null)
+          child: GameCell(isDragging: false, cardSize: _cardSize, value: null)
         );
       }, onWillAccept: (data) {
-        print("Will Accept -> " + data);
-        List<int> coords = _convertDataToCoords(data);
-        print("Gem Coords -> " + coords.toString());
-        print("Target Coords -> " + targetCoords.toString());
+        //print("Will Accept -> " + (data?.toString() ?? ''));
+        List<int> coords = GameTableHelper.convertDataToCoords((data?.toString() ?? ''));
+        //print("Gem Coords -> " + coords.toString());
+        //print("Target Coords -> " + targetCoords.toString());
+
         return true;
       }, onAccept: (data) {
-        print("onAccept");
+        //print("onAccept");
+        List<int> coords = GameTableHelper.convertDataToCoords((data?.toString() ?? ''));
+        _checkNearMatrixValue(coords[0],coords[1], targetCoords[0], targetCoords[1]);
       }, onAcceptWithDetails: (details) {
-        print("onAccept Details offset dx " + details.offset.dx.toString());
-        print("onAccept Details offset dy " + details.offset.dy.toString());
-        print("onAccept Details direction " + details.offset.direction.toString());
-        print("onAccept Details distance " + details.offset.distance.toString());
-        print("onAccept Details distanceSquared " + details.offset.distanceSquared.toString());
-        print("onAccept Details isFinite " + details.offset.isFinite.toString());
-        print("onAccept Details isInfinite " + details.offset.isInfinite.toString());
+        //print("onAccept Details offset dx " + details.offset.dx.toString());
+        //print("onAccept Details offset dy " + details.offset.dy.toString());
+        //print("onAccept Details direction " + details.offset.direction.toString());
+        //print("onAccept Details distance " + details.offset.distance.toString());
+        //print("onAccept Details distanceSquared " + details.offset.distanceSquared.toString());
+        //print("onAccept Details isFinite " + details.offset.isFinite.toString());
+        //print("onAccept Details isInfinite " + details.offset.isInfinite.toString());
+        //_printGameTable();
       }
     );
   }
 
-  List<int> _convertDataToCoords(String data) {
-    List<int> coords = List<int>(2);
-    List<String> coordsStr = data.split("_");
-
-    for (int i=0; i<coordsStr.length; i++) {
-      try {
-        coords[i] = int.parse(coordsStr[i]);
-      } catch (e) {
-        coords[i] = null;
-      }
-    }
-
-    return coords;
-  }
-
-  Material _generateContainer({bool isDragging, int value}) {
-    return Material(
-        type: MaterialType.transparency,
-        child: Container(
-          height: _cardSize,
-          width: _cardSize,
-          decoration: (isDragging || value == null) ?
-            null :
-            BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(gemsPath +  _getGemImage(value)),
-                fit: BoxFit.contain,
-              ),
-              color: Colors.transparent,
-            ),
-          child: Center(
-            child: value == null ?
-            SizedBox.shrink()
-            : Text(
-                value.toString(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-          )
-        )
-    );
-  }
-
-  int _getCardSize(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
-    int minWidth = width ~/ 8;
-    int minHeigth = height ~/ 10;
-
-    return min(minWidth, minHeigth);
-  }
-
-  String _getGemImage(int value) {
-    String gemImage = 'gem_pink.png';
-    switch (value) {
-      case 0:
-        gemImage = 'gem_pink.png';
-        break;
-
-      case 1:
-        gemImage = 'gem_cyan.png';
-        break;
-
-      case 2:
-        gemImage = 'gem_blue.png';
-        break;
-
-      case 3:
-        gemImage = 'gem_purple.png';
-        break;
-
-      case 4:
-        gemImage = 'gem_lightgreen.png';
-        break;
-
-      case 5:
-        gemImage = 'gem_red.png';
-        break;
-
-      case 6:
-        gemImage = 'gem_deeppurple.png';
-        break;
-
-      case 7:
-        gemImage = 'gem_green.png';
-        break;
-
-      case 8:
-        gemImage = 'gem_gold.png';
-        break;
-
-      case 9:
-        gemImage = 'gem_deeporange.png';
-        break;
-
-      case 10:
-        gemImage = 'gem_grey.png';
-        break;
-
-      case 11:
-        gemImage = 'gem_lightblue.png';
-        break;
-
-      case 12:
-        gemImage = 'gem_orange.png';
-        break;
-
-      case 13:
-        gemImage = 'gem_yellow.png';
-        break;
-
-      case 14:
-        gemImage = 'gem_black.png';
-        break;
-    }
-
-    return gemImage;
-  }
-
-  void _fullfillGemMatrix(){
-    for (int i=rows-1; i>3;i--){
-      for (int j=0; j<cols;j++){
-        _gems[i][j].value = _generateRandomNumber();
-      }
+  void _checkNearMatrixValue(int rowOrigin, int colOrigin, int rowDest, int colDest) {
+    var isMatching = GameTableHelper.checkIfNearMatrixValueIsMatching(rowOrigin, colOrigin, rowDest, colDest, _gems);
+    print("isMatching $isMatching");
+    if (isMatching) {
+      setState(() {
+        _gems[rowOrigin][colOrigin].value = null;
+        _gems[rowOrigin][colOrigin].isDestroying = true;
+        _gems[rowDest+1][colDest].value = null;
+        _gems[rowDest+1][colDest].isDestroying = true;
+      });
     }
   }
-
-  int _generateRandomNumber() {
-    final _random = new Random();
-    int value = _random.nextInt(maxNumber - minNumber);
-    if (value == 0)
-      value = 1;
-    return value;
-  }
-
-  void _checkMatrixValue(int row, int col, int value) {
-
-  }
-
 }

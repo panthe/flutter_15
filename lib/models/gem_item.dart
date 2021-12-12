@@ -1,5 +1,6 @@
 class GemItem {
-  int value;
+  int? value;
+  bool? isDestroying;
 
-  GemItem({this.value});
+  GemItem({required this.value, this.isDestroying = false});
 }

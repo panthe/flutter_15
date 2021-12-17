@@ -4,17 +4,18 @@ import 'package:flutter_15/models/gem_item.dart';
 
 class GameTableHelper {
   static List<List<GemItem>> generateGameTable(int rows, int cols) {
-    return List.generate(rows,
-            (i) => List.generate(cols,
-                (j) => GemItem(value: null),
-            growable: false),
+    return List.generate(
+        rows,
+        (i) =>
+            List.generate(cols, (j) => GemItem(value: null), growable: false),
         growable: false);
   }
 
-  static fullfillGemMatrix(int startRow, int rows, int cols, int minNumber, int maxNumber, List<List<GemItem>> gems){
-    for (int i=startRow; i<rows;i++) {
+  static fullfillGemMatrix(int startRow, int rows, int cols, int minNumber,
+      int maxNumber, List<List<GemItem>> gems) {
+    for (int i = startRow; i < rows; i++) {
       for (int j = 0; j < cols; j++) {
-        gems[i][j].value = generateRandomNumber(minNumber,maxNumber);
+        gems[i][j].value = generateRandomNumber(minNumber, maxNumber);
       }
     }
   }
@@ -35,10 +36,10 @@ class GameTableHelper {
   }
 
   static List<int> convertDataToCoords(String data) {
-    List<int> coords = List .filled(2,0);
+    List<int> coords = List.filled(2, 0);
     List<String> coordsStr = data.split("_");
 
-    for (int i=0; i<coordsStr.length; i++) {
+    for (int i = 0; i < coordsStr.length; i++) {
       try {
         coords[i] = int.parse(coordsStr[i]);
       } catch (e) {
@@ -116,20 +117,38 @@ class GameTableHelper {
     return gemImage;
   }
 
-  static bool checkIfNearMatrixValueIsMatching(int rowOrigin, int colOrigin, int rowDest, int colDest, List<List<GemItem>> gems) {
-    if ((colOrigin == colDest && rowOrigin == rowDest+1) || (rowDest+1 > gems.length)){
+  static bool checkIfNearMatrixValueIsMatching(
+    int rowOrigin,
+    int colOrigin,
+    int rowDest,
+    int colDest,
+    List<List<GemItem>> gems,
+  ) {
+    if ((colOrigin == colDest && rowOrigin == rowDest + 1) ||
+        (rowDest + 1 >= gems.length)) {
       return false;
     }
-    return gems[rowOrigin][colOrigin].value == gems[rowDest+1][colDest].value;
+    return gems[rowOrigin][colOrigin].value == gems[rowDest + 1][colDest].value;
+  }
+
+  static bool checkIfCanDrag(
+    int rowOrigin,
+    int colOrigin,
+    List<List<GemItem>> gems,
+  ) {
+    if (rowOrigin == 0) {
+      return false;
+    }
+    return gems[rowOrigin - 1][colOrigin].value == null;
   }
 
   static void printGameTable(List<List<GemItem>> gems) {
     final rows = gems.length;
-    if (rows<1){
+    if (rows < 1) {
       print('Error in Gems Table');
     }
     final cols = gems[0].length;
-    for (int i=0; i<rows;i++) {
+    for (int i = 0; i < rows; i++) {
       var rowValues = '';
       for (int j = 0; j < cols; j++) {
         rowValues += "{['$i','$j']} '${gems[i][j].value}' ";

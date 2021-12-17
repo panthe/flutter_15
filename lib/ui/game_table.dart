@@ -98,7 +98,9 @@ class _GameTableState extends State<GameTable> {
         child: _gems[rowIndex][colIndex].value == null ?
         _generateDragTarget(rowIndex, colIndex)
             : TableCard(
-          title: "${rowIndex}_$colIndex",
+          gems: _gems,
+          row: rowIndex,
+          col: colIndex,
           cardSize: _cardSize,
           gemItem: _gems[rowIndex][colIndex],
         )
@@ -118,14 +120,14 @@ class _GameTableState extends State<GameTable> {
         );
       }, onWillAccept: (data) {
         //print("Will Accept -> " + (data?.toString() ?? ''));
-        List<int> coords = GameTableHelper.convertDataToCoords((data?.toString() ?? ''));
+        List<int> coords = GameTableHelper.convertDataToCoords((data.toString()));
         //print("Gem Coords -> " + coords.toString());
         //print("Target Coords -> " + targetCoords.toString());
 
         return true;
       }, onAccept: (data) {
         //print("onAccept");
-        List<int> coords = GameTableHelper.convertDataToCoords((data?.toString() ?? ''));
+        List<int> coords = GameTableHelper.convertDataToCoords((data.toString()));
         _checkNearMatrixValue(coords[0],coords[1], targetCoords[0], targetCoords[1]);
       }, onAcceptWithDetails: (details) {
         //print("onAccept Details offset dx " + details.offset.dx.toString());
@@ -143,13 +145,16 @@ class _GameTableState extends State<GameTable> {
   void _checkNearMatrixValue(int rowOrigin, int colOrigin, int rowDest, int colDest) {
     var isMatching = GameTableHelper.checkIfNearMatrixValueIsMatching(rowOrigin, colOrigin, rowDest, colDest, _gems);
     print("isMatching $isMatching");
+    print(_gems[rowDest+1][colDest].value.toString());
     if (isMatching) {
       setState(() {
         _gems[rowOrigin][colOrigin].value = null;
         _gems[rowOrigin][colOrigin].isDestroying = true;
-        _gems[rowDest+1][colDest].value = null;
-        _gems[rowDest+1][colDest].isDestroying = true;
+        int valueDest = _gems[rowDest+1][colDest].value ?? 0;
+        _gems[rowDest+1][colDest].value = valueDest+1;
+        _gems[rowDest+1][colDest].isCreating = true;
       });
+      GameTableHelper.printGameTable(_gems);
     }
   }
 }
